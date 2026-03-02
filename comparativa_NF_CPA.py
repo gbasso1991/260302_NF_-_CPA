@@ -115,13 +115,19 @@ def lector_ciclos(filepath):
 
     return t,H_Vs,M_Vs,H_kAm,M_Am,metadata
 #%% Obtengo ciclos y resultados para cada concentracion - Todo a 300 kHz
-
-
-ciclos_05 = glob("NFx1_CPAx2/**/**/*ciclo_promedio_H_M.txt")
+# 5 g/L
+ciclos_05 = glob("NFx1_CPAx2/**/**/*ciclo_promedio_H_M.txt") 
 resultados_05 = glob("NFx1_CPAx2/**/**/*resultados.txt")
+ciclos_05.sort()
+resultados_05.sort()
+
+# 10 g/L
 ciclos_10 = glob("NFx2_CPAx1/**/**/*ciclo_promedio_H_M.txt")
 resultados_10 = glob("NFx2_CPAx1/**/**/*resultados.txt")
-for p in ciclo_05:
+ciclos_10.sort()
+resultados_10.sort()
+
+for p in ciclos_05:
     print('  ',p)
 for p in ciclos_10:
     print('  ',p)
@@ -132,167 +138,237 @@ for res in resultados_05:
 for res in resultados_10:
     print('  ',res)
 
+#%% Ploteo Ciclos Promedio 
 
-#%%
-
-fig, (ax,ax2) =plt.subplots(1,2,figsize=(10,5),constrained_layout=True,sharey=True)
+fig0, (ax,ax2) =plt.subplots(1,2,figsize=(10,5),constrained_layout=True,sharey=True)
 
 for i,e in enumerate(ciclos_05):
     _,_,_, H_05,M_05,_ = lector_ciclos(ciclos_05[i])
-    ax.plot(H_05/1000,M_05,'-',label='05')
+    ax.plot(H_05/1000,M_05,'-',label=f'NF{i}')
 
 for i,e in enumerate(ciclos_10):
     _,_,_, H_10,M_10,_ = lector_ciclos(ciclos_10[i])
-    ax2.plot(H_10/1000,M_10,'-',label='10')
-# ax.plot(H_top/1000,M_top,'-',label='top')
-# ax.plot(H_center/1000,M_center,'-',label='center')
-# ax.plot(H_bottom/1000,M_bottom,'-',label='bottom')
-
-
+    ax2.plot(H_10/1000,M_10,'-',label=f'NF{i}')
 
 ax.set_ylabel('M (A/m)')
+ax.set_title('NF - 5 g/L',loc='center')
+ax2.set_title('NF - 10 g/L',loc='center')
 for a in ax,ax2:
     a.grid()
     a.set_xlabel('H (kA/m)')
     a.legend()
-#plt.savefig('MvsH_NF@cit_300kHz_57kAm_top_center_bottom.png',dpi=300)
+plt.suptitle('Comparativa ciclos promedio\n300 kHz - 57 kA/m')
+#%% Listas con Resultados
+res_05=[]
+for r in resultados_05:
+    res_05.append(ResultadosESAR(os.path.dirname(r)))
+res_10=[]
+for r in resultados_10:
+    res_10.append(ResultadosESAR(os.path.dirname(r)))
 
-#%% Resultados
+#%% 1- Templogs
 
+fig1, (ax,ax2) =plt.subplots(2,1,figsize=(10,6),constrained_layout=True,sharey=True,sharex=True)
 
-res_top = ResultadosESAR(os.path.dirname(dir_res_top[0]))
+for i,r in enumerate(res_05):
+    dt = r.time[-1]-r.time[0]
+    dT = r.temperatura[-1]-r.temperatura[0]
+    rate=dT/dt
+    label=f'NF {i} - $\Delta$t={dt:.2f} s - $\Delta$T={dT:.2f} °C  rate = {rate:.2f} °C/s'
+    ax.plot(r.time,r.temperatura,'.-',label=label)
 
-res_center = ResultadosESAR(os.path.dirname(dir_res_center[0]))
+for i,r in enumerate(res_10):
+    dt = r.time[-1]-r.time[0]
+    dT = r.temperatura[-1]-r.temperatura[0]
+    rate=dT/dt
+    label=f'NF {i} - $\Delta$t={dt:.2f} s - $\Delta$T={dT:.2f} °C  rate = {rate:.2f} °C/s'
+    ax2.plot(r.time,r.temperatura,'.-',label=label)
 
-res_bottom = ResultadosESAR(os.path.dirname(dir_res_bottom[0]))
-
-#%% Temp vs time
-dt_top = res_top.time[-1]-res_top.time[0]
-dt_center = res_center.time[-1]-res_center.time[0]
-dt_bottom = res_bottom.time[-1]-res_bottom.time[0]
-dT_top = res_top.temperatura[-1]-res_top.temperatura[0]
-dT_center = res_center.temperatura[-1]-res_center.temperatura[0]
-dT_bottom = res_bottom.temperatura[-1]-res_bottom.temperatura[0]
-
-fig0, ax = plt.subplots(figsize=(8,5),constrained_layout=True)
-ax.plot(res_top.time,res_top.temperatura,'.-',label=rf'''top
-$\Delta$t={dt_top:.2f} s 
-$\Delta$T={dT_top:.2f} °C
-rate = {dT_top/dt_top:.2f} °C/s
-''')
-ax.plot(res_center.time,res_center.temperatura,'.-',label=f'''center 
-$\Delta$t={dt_center:.2f} s 
-$\Delta$T={dT_center:.2f} °C
-rate = {dT_center/dt_center:.2f} °C/s
-''')
-ax.plot(res_bottom.time,res_bottom.temperatura,'.-',label=f'''bottom
-$\Delta$t={dt_bottom:.2f} s 
-$\Delta$T={dT_bottom:.2f} °C
-rate = {dT_bottom/dt_bottom:.2f} °C/s
-''')
-ax.grid()
-ax.set_xlabel('t (s)')
-ax.set_ylabel('T (°C)')
-ax.legend()
-plt.suptitle('Templogs\nNF@cit - 300 kHz & 57 kA/m',fontsize=14)
-plt.savefig('templogs_NF@cit_300kHz_57kAm_top_center_bottom.png',dpi=300)
-#%% tau y SAR vs time/Temp
-fig1, ((ax,ax3),(ax2,ax4)) = plt.subplots(2,2,figsize=(11,7),constrained_layout=True,sharex='col',sharey='row')
-
-ax.set_title('τ vs t',loc='left')
-ax.plot(res_top.time,res_top.tau,'.-',label='top')
-ax.plot(res_center.time,res_center.tau,'.-',label='center')
-ax.plot(res_bottom.time,res_bottom.tau,'.-',label='bottom')
-ax.set_ylabel('τ (ns)')
-
-ax2.set_title('SAR vs t',loc='left')
-ax2.plot(res_top.time,res_top.SAR,'.-',label='top')
-ax2.plot(res_center.time,res_center.SAR,'.-',label='center')
-ax2.plot(res_bottom.time,res_bottom.SAR,'.-',label='bottom')
-ax2.set_ylabel('SAR (W/g)')
-ax2.set_xlabel('t (s)')
-
-ax3.set_title('τ vs T',loc='left')
-ax3.plot(res_top.temperatura,res_top.tau,'.-',label='top')
-ax3.plot(res_center.temperatura,res_center.tau,'.-',label='center')
-ax3.plot(res_bottom.temperatura,res_bottom.tau,'.-',label='bottom')
-
-ax4.set_title('SAR vs T',loc='left')
-ax4.plot(res_top.temperatura,res_top.SAR,'.-',label='top')
-ax4.plot(res_center.temperatura,res_center.SAR,'.-',label='center')
-ax4.plot(res_bottom.temperatura,res_bottom.SAR,'.-',label='bottom')
-ax4.set_xlabel('T (s)')
-
-plt.suptitle('tau & SAR vs time/Temp\nNF@cit - 300 kHz & 57 kA/m',fontsize=15)
-
-for a in ax,ax2,ax3,ax4:
+for a in ax,ax2:
     a.grid()
-    a.legend()
-plt.savefig('tau_SAR_vs_time_temp_NF@cit_300kHz_57kAm_top_center_bottom.png',dpi=300)
-plt.show()
-
-
-#%% dphi y mag vs time / Temp
-fig2, ((ax,ax3),(ax2,ax4)) = plt.subplots(2,2,figsize=(11,7),constrained_layout=True,sharex='col',sharey='row')
-
-ax.set_title('dphi vs t',loc='left')
-ax.plot(res_top.time,res_top.dphi_fem,'.-',label='top')
-ax.plot(res_center.time,res_center.dphi_fem,'.-',label='center')
-ax.plot(res_bottom.time,res_bottom.dphi_fem,'.-',label='bottom')
-ax.set_ylabel('dphi (rad)')
-
-ax2.set_title('Magnitud vs t',loc='left')
-ax2.plot(res_top.time,res_top.magnitud_fund,'.-',label='top')
-ax2.plot(res_center.time,res_center.magnitud_fund,'.-',label='center')
-ax2.plot(res_bottom.time,res_bottom.magnitud_fund,'.-',label='bottom')
-ax2.set_ylabel('magnitud ()')
+    a.legend(loc='upper left')
+    a.set_ylabel('T (ºC)')
+ax.set_xlim(0,)
+ax.set_title('NF - 5 g/L',loc='left')
+ax2.set_title('NF - 10 g/L',loc='left')    
 ax2.set_xlabel('t (s)')
+plt.suptitle('Templogs NF - 5 g/L & 10 g/L')
 
-ax3.set_title('dphi vs Temp',loc='left')
-ax3.plot(res_top.temperatura,res_top.dphi_fem,'.-',label='top')
-ax3.plot(res_center.temperatura,res_center.dphi_fem,'.-',label='center')
-ax3.plot(res_bottom.temperatura,res_bottom.dphi_fem,'.-',label='bottom')
+#%% 2 - Tau vs time / Temp
+fig20, (ax,ax2) =plt.subplots(2,1,figsize=(10,6),constrained_layout=True,sharey=True,sharex=True)
 
-ax4.set_title('Magnitud vs Temp',loc='left')
-ax4.plot(res_top.temperatura,res_top.magnitud_fund,'.-',label='top')
-ax4.plot(res_center.temperatura,res_center.magnitud_fund,'.-',label='center')
-ax4.plot(res_bottom.temperatura,res_bottom.magnitud_fund,'.-',label='bottom')
-ax4.set_xlabel('T (°C)')
+for i,r in enumerate(res_05):
+    ax.plot(r.time,r.tau,'.-',label=f'NF {i}')
 
-plt.suptitle('dphi & manitud vs time/Temp\nNF@cit - 300 kHz & 57 kA/m',fontsize=14)
+for i,r in enumerate(res_10):
+    ax2.plot(r.time,r.tau,'.-',label=f'NF {i}')
 
-for a in ax,ax2,ax3,ax4:
+for a in ax,ax2:
     a.grid()
-    a.legend()
-plt.savefig('dphi_mag_vs_time_temp_NF@cit_300kHz_57kAm_top_center_bottom.png',dpi=300)
-plt.show()
+    a.legend(loc='lower left')
+    a.set_ylabel('τ (ns)')
+ax.set_xlim(0,)
+ax.set_title('NF - 5 g/L',loc='left')
+ax2.set_title('NF - 10 g/L',loc='left')    
+ax2.set_xlabel('t (s)')
+plt.suptitle('tau NF vs time - 5 g/L & 10 g/L')
 
-#%% Magnetizacion maxima vs time / Temp
+fig21, (ax,ax2) =plt.subplots(2,1,figsize=(10,6),constrained_layout=True,sharey=True,sharex=True)
 
-fig3,(ax,ax2) =plt.subplots(1,2,figsize=(12,5),constrained_layout=True,sharey='row')
+for i,r in enumerate(res_05):
+    ax.plot(r.temperatura,r.tau,'.-',label=f'NF {i}')
 
-ax.plot(res_top.time,res_top.mag_max,'.-',label='top')
-ax.plot(res_center.time,res_center.mag_max,'.-',label='center')
-ax.plot(res_bottom.time,res_bottom.mag_max,'.-',label='bottom')
+for i,r in enumerate(res_10):
+    ax2.plot(r.temperatura,r.tau,'.-',label=f'NF {i}')
 
-ax2.plot(res_top.temperatura,res_top.mag_max,'.-',label='top')
-ax2.plot(res_center.temperatura,res_center.mag_max,'.-',label='center')
-ax2.plot(res_bottom.temperatura,res_bottom.mag_max,'.-',label='bottom')
-
-ax.grid()
-ax2.grid()
-ax.set_xlabel('t (s)')
+for a in ax,ax2:
+    a.grid()
+    a.legend(loc='upper right')
+    a.set_ylabel('τ (ns)')
+ax.set_xlim(24,75)
+ax.set_title('NF - 5 g/L',loc='left')
+ax2.set_title('NF - 10 g/L',loc='left')    
 ax2.set_xlabel('T (°C)')
-ax.set_ylabel('Mmax (A/m)')
+plt.suptitle('tau NF vs temperatura - 5 g/L & 10 g/L')
 
-ax.legend()
-ax2.legend()
+#%% 3 - SAR vs time / Temp
 
-plt.suptitle('Mmax vs time/Temp\nNF@cit - 300 kHz & 57 kA/m',fontsize=14)
-plt.savefig('Mmax_vs_time_temp_NF@cit_300kHz_57kAm_top_center_bottom.png',dpi=300)
-plt.show()
+fig30, (ax,ax2) =plt.subplots(2,1,figsize=(10,6),constrained_layout=True,sharey=True,sharex=True)
+
+for i,r in enumerate(res_05):
+    ax.plot(r.time,r.SAR,'.-',label=f'NF {i}')
+
+for i,r in enumerate(res_10):
+    ax2.plot(r.time,r.SAR,'.-',label=f'NF {i}')
+
+for a in ax,ax2:
+    a.grid()
+    a.legend(loc='upper right')
+    a.set_ylabel('SAR (W/g)')
+ax.set_xlim(0,)
+ax.set_title('NF - 5 g/L',loc='left')
+ax2.set_title('NF - 10 g/L',loc='left')    
+ax2.set_xlabel('t (s)')
+plt.suptitle('SAR NF vs time - 5 g/L & 10 g/L')
+
+fig31, (ax,ax2) =plt.subplots(2,1,figsize=(10,6),constrained_layout=True,sharey=True,sharex=True)
+
+for i,r in enumerate(res_05):
+    ax.plot(r.temperatura,r.SAR,'.-',label=f'NF {i}')
+
+for i,r in enumerate(res_10):
+    ax2.plot(r.temperatura,r.SAR,'.-',label=f'NF {i}')
+
+for a in ax,ax2:
+    a.grid()
+    a.legend(loc='upper right')
+    a.set_ylabel('SAR (W/g)')
+ax.set_xlim(24,75)
+ax.set_title('NF - 5 g/L',loc='left')
+ax2.set_title('NF - 10 g/L',loc='left')    
+ax2.set_xlabel('T (°C)')
+plt.suptitle('SAR NF vs temperatura - 5 g/L & 10 g/L')
+
+#%% 4 - Hc vs time/Temp
+
+fig40, (ax,ax2) =plt.subplots(2,1,figsize=(10,6),constrained_layout=True,sharey=True,sharex=True)
+
+for i,r in enumerate(res_05):
+    ax.plot(r.time,r.Hc,'.-',label=f'NF {i}')
+
+for i,r in enumerate(res_10):
+    ax2.plot(r.time,r.Hc,'.-',label=f'NF {i}')
+
+for a in ax,ax2:
+    a.grid()
+    a.legend(loc='upper right')
+    a.set_ylabel('Hc (A/m)')
+ax.set_xlim(0,)
+ax.set_title('NF - 5 g/L',loc='left')
+ax2.set_title('NF - 10 g/L',loc='left')    
+ax2.set_xlabel('t (s)')
+plt.suptitle('Hc NF vs time - 5 g/L & 10 g/L')
+
+fig41, (ax,ax2) =plt.subplots(2,1,figsize=(10,6),constrained_layout=True,sharey=True,sharex=True)
+
+for i,r in enumerate(res_05):
+    ax.plot(r.temperatura,r.Hc,'.-',label=f'NF {i}')
+
+for i,r in enumerate(res_10):
+    ax2.plot(r.temperatura,r.Hc,'.-',label=f'NF {i}')
+
+for a in ax,ax2:
+    a.grid()
+    a.legend(loc='upper right')
+    a.set_ylabel('Hc (A/m)')
+ax.set_xlim(24,75)
+ax.set_title('NF - 5 g/L',loc='left')
+ax2.set_title('NF - 10 g/L',loc='left')    
+ax2.set_xlabel('T (°C)')
+plt.suptitle('Hc NF vs temperatura - 5 g/L & 10 g/L')
+#%% 5 - Mag Max vs time/Temp
+
+fig50, (ax,ax2) =plt.subplots(2,1,figsize=(10,6),constrained_layout=True,sharey=False,sharex=True)
+
+for i,r in enumerate(res_05):
+    dM = r.mag_max[-1]-r.mag_max[0]
+    label=f'NF{i} - $\Delta$'+'M$_{max}$ = '+f'{dM:.1f} A/m '
+    ax.plot(r.time,r.mag_max,'.-',label=label)
+
+for i,r in enumerate(res_10):
+    dM = r.mag_max[-1]-r.mag_max[0]
+    label=f'NF{i} - $\Delta$'+'M$_{max}$ = '+f'{dM:.1f} A/m '
+    ax2.plot(r.time,r.mag_max,'.-',label=label)
+
+for a in ax,ax2:
+    a.grid()
+    a.legend(loc='best')
+    a.set_ylabel('M$_{max}$ (A/m)')
+ax.set_xlim(0,)
+ax.set_title('NF - 5 g/L',loc='left')
+ax2.set_title('NF - 10 g/L',loc='left')    
+ax2.set_xlabel('t (s)')
+plt.suptitle('M$_{max}$ NF vs time - 5 g/L & 10 g/L')
 
 
+fig51, (ax,ax2) =plt.subplots(2,1,figsize=(10,6),constrained_layout=True,sharey=False,sharex=True)
 
+for i,r in enumerate(res_05):
+    dM = r.mag_max[-1]-r.mag_max[0]
+    label=f'NF{i} - $\Delta$'+'M$_{max}$ = '+f'{dM:.1f} A/m '
+    ax.plot(r.temperatura,r.mag_max,'.-',label=label)
+
+for i,r in enumerate(res_10):
+    dM = r.mag_max[-1]-r.mag_max[0]
+    label=f'NF{i} - $\Delta$'+'M$_{max}$ = '+f'{dM:.1f} A/m '
+    ax2.plot(r.temperatura,r.mag_max,'.-',label=label)
+
+for a in ax,ax2:
+    a.grid()
+    a.legend(loc='upper right')
+    a.set_ylabel('M$_{max}$ (A/m)')
+ax.set_xlim(24,75)
+ax.set_title('NF - 5 g/L',loc='left')
+ax2.set_title('NF - 10 g/L',loc='left')    
+ax2.set_xlabel('T (°C)')
+plt.suptitle('M$_{max}$ NF vs temperatura - 5 g/L & 10 g/L')
+
+
+# %% Salvo las figuras 
+figs=[fig0,fig1,fig20,fig21,fig30,fig31,fig40,fig41,fig50,fig51]
+names=['ciclos_promedio_NF5_NF10',
+       'templog_NF5_NF10',
+       'tau_vs_time_NF5_NF10',
+       'tau_vs_Temp_NF5_NF10',
+       'SAR_vs_time_NF5_NF10',
+       'SAR_vs_Temp_NF5_NF10',
+       'Hc_vs_time_NF5_NF10',
+       'Hc_vs_Temp_NF5_NF10',
+       'Mmax_vs_time_NF5_NF10',
+       'Mmax_vs_Temp_NF5_NF10' ]
+
+
+for i,e in enumerate(zip(figs,names)):
+    e[0].savefig(f'{i}_{e[1]}.png',dpi=300)
 
 # %%
