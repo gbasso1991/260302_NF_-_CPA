@@ -148,7 +148,7 @@ for i,e in enumerate(ciclos_05):
 
 for i,e in enumerate(ciclos_10):
     _,_,_, H_10,M_10,_ = lector_ciclos(ciclos_10[i])
-    ax2.plot(H_10/1000,M_10,'-',label=f'NF{i}')
+    ax2.plot(H_10/1000,M_10,'-',label=f'NF{i+3}')
 
 ax.set_ylabel('M (A/m)')
 ax.set_title('NF - 5 g/L',loc='center')
@@ -166,28 +166,53 @@ res_10=[]
 for r in resultados_10:
     res_10.append(ResultadosESAR(os.path.dirname(r)))
 
-#%% 1- Templogs
-
+#%% 1- Templogs y ecSAR
+conc_05 = 5 #g/L
+conc_10 = 10 #g/L
+ecSAR_05=[]
+ecSAR_10=[]
+rates_05=[]
+rates_10=[]
 fig1, (ax,ax2) =plt.subplots(2,1,figsize=(10,6),constrained_layout=True,sharey=True,sharex=True)
 
 for i,r in enumerate(res_05):
     dt = r.time[-1]-r.time[0]
     dT = r.temperatura[-1]-r.temperatura[0]
     rate=dT/dt
-    label=f'NF {i} - $\Delta$t={dt:.2f} s - $\Delta$T={dT:.2f} °C  rate = {rate:.2f} °C/s'
+    rates_05.append(rate)
+    ecSAR_05.append(rate*4186/conc_05)
+    label=f'$\Delta$t={dt:.2f} s  $\Delta$T={dT:.2f} °C  WR= {rate:.2f} °C/s'
     ax.plot(r.time,r.temperatura,'.-',label=label)
 
 for i,r in enumerate(res_10):
     dt = r.time[-1]-r.time[0]
     dT = r.temperatura[-1]-r.temperatura[0]
     rate=dT/dt
-    label=f'NF {i} - $\Delta$t={dt:.2f} s - $\Delta$T={dT:.2f} °C  rate = {rate:.2f} °C/s'
+    rates_10.append(rate)
+    ecSAR_10.append(rate*4186/conc_10)
+    label=f'$\Delta$t={dt:.2f} s  $\Delta$T={dT:.2f} °C  WR= {rate:.2f} °C/s'
     ax2.plot(r.time,r.temperatura,'.-',label=label)
 
 for a in ax,ax2:
     a.grid()
     a.legend(loc='upper left')
     a.set_ylabel('T (ºC)')
+rate_05=ufloat(np.mean(rates_05),np.std(rates_05))
+rate_10=ufloat(np.mean(rates_10),np.std(rates_10))
+
+ecSAR_05=ufloat(np.mean(ecSAR_05),np.std(ecSAR_05))
+ecSAR_10=ufloat(np.mean(ecSAR_10),np.std(ecSAR_10))
+
+ax.text(0.98,0.1,f'WR = {rate_05:.1uS} °C/s\necSAR = {ecSAR_05:.2uS} W/g',
+        bbox=dict(boxstyle="round", fc='C3',alpha=0.6,lw=1),
+        ha='right',va='bottom',
+        transform=ax.transAxes)
+
+ax2.text(0.98,0.1,f'WR = {rate_10:.1uS} °C/s\necSAR = {ecSAR_10:.2uS} W/g',
+        bbox=dict(boxstyle="round", fc='C3',alpha=0.6,lw=1),
+        ha='right',va='bottom',
+        transform=ax2.transAxes)
+
 ax.set_xlim(0,)
 ax.set_title('NF - 5 g/L',loc='left')
 ax2.set_title('NF - 10 g/L',loc='left')    
@@ -233,6 +258,11 @@ plt.suptitle('tau NF vs temperatura - 5 g/L & 10 g/L')
 
 #%% 3 - SAR vs time / Temp
 
+ESAR_05_all=ufloat(np.mean(np.concatenate([r.SAR for r in res_05])),np.std(np.concatenate([r.SAR for r in res_05])))
+ESAR_10_all=ufloat(np.mean(np.concatenate([r.SAR for r in res_10])),np.std(np.concatenate([r.SAR for r in res_10])))
+
+text_05 = f'ESAR = {ESAR_05_all:.2uS} W/g'
+text_10 = f'ESAR = {ESAR_10_all:.2uS} W/g'
 fig30, (ax,ax2) =plt.subplots(2,1,figsize=(10,6),constrained_layout=True,sharey=True,sharex=True)
 
 for i,r in enumerate(res_05):
@@ -241,9 +271,21 @@ for i,r in enumerate(res_05):
 for i,r in enumerate(res_10):
     ax2.plot(r.time,r.SAR,'.-',label=f'NF {i}')
 
+
+ax.text(0.95,0.9,f'ESAR = {ESAR_05_all:.2uS} W/g',
+        bbox=dict(boxstyle="round", fc='C3',alpha=0.6,lw=1),
+        ha='right',va='top',
+        transform=ax.transAxes)
+
+ax2.text(0.95,0.9,f'ESAR = {ESAR_10_all:.2uS} W/g',
+        bbox=dict(boxstyle="round", fc='C3',alpha=0.6,lw=1),
+        ha='right',va='top',
+        transform=ax2.transAxes)
+
+
 for a in ax,ax2:
     a.grid()
-    a.legend(loc='upper right')
+    #a.legend(loc='upper right')
     a.set_ylabel('SAR (W/g)')
 ax.set_xlim(0,)
 ax.set_title('NF - 5 g/L',loc='left')
@@ -259,15 +301,28 @@ for i,r in enumerate(res_05):
 for i,r in enumerate(res_10):
     ax2.plot(r.temperatura,r.SAR,'.-',label=f'NF {i}')
 
+
+ax.text(0.95,0.9,f'ESAR = {ESAR_05_all:.2uS} W/g',
+        bbox=dict(boxstyle="round", fc='C3',alpha=0.6,lw=1),
+        ha='right',va='top',
+        transform=ax.transAxes)
+
+ax2.text(0.95,0.9,f'ESAR = {ESAR_10_all:.2uS} W/g',
+        bbox=dict(boxstyle="round", fc='C3',alpha=0.6,lw=1),
+        ha='right',va='top',
+        transform=ax2.transAxes)
+
+
 for a in ax,ax2:
     a.grid()
-    a.legend(loc='upper right')
+    #a.legend(loc='upper right')
     a.set_ylabel('SAR (W/g)')
 ax.set_xlim(24,75)
 ax.set_title('NF - 5 g/L',loc='left')
 ax2.set_title('NF - 10 g/L',loc='left')    
 ax2.set_xlabel('T (°C)')
 plt.suptitle('SAR NF vs temperatura - 5 g/L & 10 g/L')
+
 
 #%% 4 - Hc vs time/Temp
 
@@ -360,8 +415,8 @@ names=['ciclos_promedio_NF5_NF10',
        'templog_NF5_NF10',
        'tau_vs_time_NF5_NF10',
        'tau_vs_Temp_NF5_NF10',
-       'SAR_vs_time_NF5_NF10',
-       'SAR_vs_Temp_NF5_NF10',
+       'ESAR_vs_time_NF5_NF10',
+       'ESAR_vs_Temp_NF5_NF10',
        'Hc_vs_time_NF5_NF10',
        'Hc_vs_Temp_NF5_NF10',
        'Mmax_vs_time_NF5_NF10',
